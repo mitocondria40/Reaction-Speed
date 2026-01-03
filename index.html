@@ -1,0 +1,575 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-GYJ40Q6P1G"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'G-GYJ40Q6P1G');
+    </script>
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Test de Reflejos - Challenge Mode</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Inter:wght@400;600&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --bg-idle: #0a0a0a; 
+            --bg-wait: #d90429;
+            --bg-click: #00ff41;
+            --neon-blue: #00f3ff;
+            --gold: #ffcc00;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-idle);
+            color: white;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+            overflow: hidden;
+            position: relative; /* Necesario para las partículas */
+        }
+
+        /* --- NUEVO: ESTILOS DE PARTÍCULAS --- */
+        .particle {
+            position: absolute;
+            width: 8px;
+            height: 8px;
+            background: white;
+            pointer-events: none; /* Click traspasa */
+            border-radius: 2px; /* Cuadrados ligeramente redondeados */
+            z-index: 9999;
+            animation: explode 0.6s ease-out forwards;
+        }
+
+        @keyframes explode {
+            0% {
+                transform: translate(0, 0) scale(1) rotate(0deg);
+                opacity: 1;
+            }
+            100% {
+                transform: translate(var(--tx), var(--ty)) scale(0) rotate(var(--rot));
+                opacity: 0;
+            }
+        }
+        /* ------------------------------------ */
+
+        #hud-username {
+            position: absolute;
+            top: 15px;
+            left: 20px;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.8rem;
+            color: rgba(255, 255, 255, 0.5);
+            z-index: 100;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            pointer-events: none;
+            display: none;
+        }
+
+        #world-ranking {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            text-align: left;
+            z-index: 50;
+            font-family: 'Orbitron', sans-serif;
+            opacity: 0.8;
+            pointer-events: none;
+            font-size: 0.75rem;
+            background: rgba(0,0,0,0.5);
+            padding: 10px;
+            border-radius: 8px;
+            border-left: 2px solid var(--neon-blue);
+        }
+        
+        .wr-title {
+            color: var(--neon-blue);
+            text-transform: uppercase;
+            margin-bottom: 8px;
+            font-weight: bold;
+            letter-spacing: 1px;
+        }
+        .wr-item { margin: 3px 0; color: rgba(255,255,255,0.9); white-space: nowrap; }
+        .wr-time { color: var(--gold); font-weight: bold; margin-left: 5px; }
+
+        #game-area {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            cursor: pointer;
+            width: 100%;
+            height: 100%;
+            position: relative;
+        }
+
+        .state-idle { background-color: var(--bg-idle); }
+        .state-wait { background-color: var(--bg-wait); }
+        .state-click { background-color: var(--bg-click); color: black !important; }
+
+        h1 {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 2.2rem;
+            margin: 0;
+            text-transform: uppercase;
+            line-height: 1.2;
+            text-shadow: 0 0 20px rgba(255,255,255,0.1);
+            max-width: 90%;
+        }
+        
+        .instruction {
+            font-size: 1.1rem;
+            opacity: 0.8;
+            margin-top: 10px;
+            max-width: 80%;
+            font-weight: 300;
+        }
+        
+        .challenger-name {
+            color: var(--neon-blue);
+            font-weight: 900;
+            text-shadow: 0 0 10px var(--neon-blue);
+        }
+
+        .icon-large { font-size: 4rem; margin-bottom: 20px; display: block; }
+
+        #username-input {
+            background: transparent;
+            border: none;
+            border-bottom: 2px solid white;
+            color: white;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.5rem;
+            text-align: center;
+            padding: 10px;
+            margin: 20px 0;
+            width: 80%;
+            outline: none;
+            text-transform: uppercase;
+        }
+        #username-input::placeholder { color: rgba(255,255,255,0.3); }
+
+        #result-screen { display: none; width: 100%; flex-direction: column; align-items: center; }
+        
+        .ms-score {
+            font-size: 5.5rem;
+            font-weight: 900;
+            font-family: 'Orbitron', sans-serif;
+            line-height: 1;
+            margin: 10px 0;
+        }
+        
+        .rank-badge {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.5rem;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 30px;
+        }
+
+        .btn-container {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            margin-top: 30px;
+            width: 100%;
+            max-width: 280px;
+            z-index: 10;
+        }
+
+        .btn {
+            background: transparent;
+            color: white;
+            border: 2px solid rgba(255,255,255,0.5);
+            padding: 18px;
+            font-size: 1rem;
+            font-weight: bold;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: 0.2s;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+        
+        .btn:active { transform: scale(0.95); }
+        
+        .btn-primary {
+            background: white;
+            color: black;
+            border: 2px solid white;
+            box-shadow: 0 0 20px rgba(255,255,255,0.3);
+        }
+
+        .shake { animation: shake 0.4s cubic-bezier(.36,.07,.19,.97) both; }
+        @keyframes shake { 10%, 90% { transform: translate3d(-2px, 0, 0); } 20%, 80% { transform: translate3d(4px, 0, 0); } 30%, 50%, 70% { transform: translate3d(-6px, 0, 0); } 40%, 60% { transform: translate3d(6px, 0, 0); } }
+        
+        .ad-space {
+            height: 90px;
+            background: #000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #333;
+            font-size: 0.7rem;
+            border-top: 1px solid #222;
+        }
+
+    </style>
+</head>
+<body>
+
+    <div id="hud-username">👤 ???</div>
+
+    <div id="world-ranking">
+        <div class="wr-title">🌍 Récord Mundial</div>
+        <div class="wr-item">1. 🇨🇳 李伟 <span class="wr-time">1ms ⚡</span></div>
+        <div class="wr-item">2. 🇸🇦 أحمد <span class="wr-time">4ms ⚡</span></div>
+        <div class="wr-item">3. 🇷🇺 Иван <span class="wr-time">5ms ⚡</span></div>
+        <div class="wr-item">4. 🇯🇵 Akira <span class="wr-time">5ms ⚡</span></div>
+        <div class="wr-item">5. 🇰🇷 Chen <span class="wr-time">6ms ⚡</span></div>
+    </div>
+
+    <div id="game-area" class="state-idle" onmousedown="handleInput(event)" ontouchstart="handleInput(event)">
+        
+        <div id="login-screen">
+            <span class="icon-large">👽</span>
+            <h1>IDENTIFÍCATE</h1>
+            <p class="instruction">Elige tu nombre para jugar</p>
+            <input type="text" id="username-input" placeholder="TU NICKNAME" maxlength="10" onkeypress="handleEnter(event)">
+            <div class="btn-container">
+                <button class="btn btn-primary" onmousedown="event.stopPropagation()" ontouchstart="event.stopPropagation()" onclick="saveUserAndStart()">
+                    ENTRAR AL JUEGO
+                </button>
+            </div>
+        </div>
+
+        <div id="start-screen" style="display:none;">
+            <span class="icon-large" id="start-icon">⚡</span>
+            <h1 id="start-title">TEST DE REFLEJOS</h1>
+            <div id="start-subtitle-container">
+                <p class="instruction">Toca cuando se ponga VERDE.</p>
+            </div>
+            <div class="btn-container">
+                <button class="btn btn-primary" onmousedown="event.stopPropagation()" ontouchstart="event.stopPropagation()" onclick="startGame()">
+                    ▶ JUGAR AHORA
+                </button>
+            </div>
+        </div>
+
+        <div id="wait-screen" style="display:none;">
+            <span class="icon-large" style="opacity:0.5">❤️</span>
+            <h1>ESPERA...</h1>
+        </div>
+
+        <div id="click-screen" style="display:none;">
+            <span class="icon-large">👊</span>
+            <h1>¡AHORA!</h1>
+        </div>
+
+        <div id="result-screen">
+            <p style="font-size: 0.8rem; opacity: 0.6; margin-top: 20px; letter-spacing: 2px;">TU TIEMPO</p>
+            <div id="time-display" class="ms-score">0ms</div>
+            <div id="rank-display" class="rank-badge">---</div>
+            <p id="challenge-feedback" style="display:none; color:#00ff41; font-weight:bold; margin-bottom:20px;"></p>
+            <div class="btn-container">
+                <button class="btn btn-primary" onmousedown="event.stopPropagation()" ontouchstart="event.stopPropagation()" onclick="compartirReto()">
+                    ⚔️ DESAFIAR A UN AMIGO
+                </button>
+                <button class="btn" onmousedown="event.stopPropagation()" ontouchstart="event.stopPropagation()" onclick="resetGame()">
+                    🔄 REPETIR
+                </button>
+            </div>
+        </div>
+
+    </div>
+    
+    <div class="ad-space">Espacio Publicitario (AdSense)</div>
+
+    <script>
+        let gameState = 'login'; 
+        let startTime = 0;
+        let timeoutId = null;
+        let audioCtx = null;
+        let tensionOscillator = null;
+        let finalScore = 0;
+        
+        let username = localStorage.getItem('reflexUsername') || "";
+        let challengerName = null;
+        let challengerScore = null;
+
+        const screens = {
+            login: document.getElementById('login-screen'),
+            start: document.getElementById('start-screen'),
+            wait: document.getElementById('wait-screen'),
+            click: document.getElementById('click-screen'),
+            result: document.getElementById('result-screen')
+        };
+
+        const gameArea = document.getElementById('game-area');
+
+        window.onload = function() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const scoreParam = urlParams.get('score');
+            const userParam = urlParams.get('user');
+            if (scoreParam && userParam) {
+                challengerScore = parseInt(scoreParam);
+                challengerName = decodeURIComponent(userParam);
+            }
+            if (username) {
+                document.getElementById('username-input').value = username;
+            }
+        };
+
+        // --- FUNCIÓN DE PARTÍCULAS (JUICE) ---
+        function spawnParticles(x, y, color) {
+            const count = 20; // Número de partículas
+            for (let i = 0; i < count; i++) {
+                const p = document.createElement('div');
+                p.classList.add('particle');
+                document.body.appendChild(p);
+                
+                // Posición inicial
+                p.style.left = x + 'px';
+                p.style.top = y + 'px';
+                p.style.backgroundColor = color;
+                
+                // Dirección aleatoria
+                const angle = Math.random() * Math.PI * 2;
+                const velocity = Math.random() * 100 + 50; // Distancia de explosión
+                
+                const tx = Math.cos(angle) * velocity + 'px';
+                const ty = Math.sin(angle) * velocity + 'px';
+                const rot = Math.random() * 360 + 'deg';
+                
+                // Aplicar variables CSS para la animación
+                p.style.setProperty('--tx', tx);
+                p.style.setProperty('--ty', ty);
+                p.style.setProperty('--rot', rot);
+                
+                // Eliminar del DOM al terminar
+                setTimeout(() => p.remove(), 600);
+            }
+        }
+        // -------------------------------------
+
+        function handleEnter(e) { if (e.key === 'Enter') saveUserAndStart(); }
+
+        function saveUserAndStart() {
+            const input = document.getElementById('username-input').value.trim().toUpperCase();
+            if (!input) { alert("¡Necesitas un nombre!"); return; }
+            username = input;
+            localStorage.setItem('reflexUsername', username);
+            document.getElementById('hud-username').innerText = `👤 ${username}`;
+            document.getElementById('hud-username').style.display = 'block';
+            prepareStartScreen();
+            gameState = 'idle';
+            showScreen('start');
+        }
+
+        function prepareStartScreen() {
+            if (challengerName && challengerScore) {
+                document.getElementById('start-icon').innerText = "🔥";
+                document.getElementById('start-title').innerText = "¡DESAFÍO!";
+                document.getElementById('start-subtitle-container').innerHTML = `
+                    <div style="font-size: 1.5rem; margin: 20px 0; font-family: 'Orbitron', sans-serif;">
+                        <span class="challenger-name">${challengerName}</span> hizo <strong>${challengerScore} ms</strong>
+                    </div>
+                    <p class="instruction" style="margin-top:0; font-size: 1.2rem;">¿Podrás vencerle?</p>
+                `;
+            } else {
+                document.getElementById('start-icon').innerText = "⚡";
+                document.getElementById('start-title').innerText = "TEST DE REFLEJOS";
+                document.getElementById('start-subtitle-container').innerHTML = `<p class="instruction">Toca cuando se ponga VERDE.</p>`;
+            }
+        }
+
+        function initAudio() { if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)(); }
+        
+        // ... (Funciones de audio iguales, omitidas por brevedad, no cambian) ...
+        function playTensionSound() {
+            if (!audioCtx) initAudio();
+            tensionOscillator = audioCtx.createOscillator();
+            const gainNode = audioCtx.createGain();
+            tensionOscillator.type = 'sine';
+            tensionOscillator.frequency.setValueAtTime(60, audioCtx.currentTime);
+            gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.5);
+            tensionOscillator.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+            tensionOscillator.start();
+            tensionOscillator.onended = () => { tensionOscillator = null; };
+            this.tensionLoop = setInterval(() => {
+                const osc = audioCtx.createOscillator();
+                const gn = audioCtx.createGain();
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(50, audioCtx.currentTime);
+                gn.gain.setValueAtTime(0.3, audioCtx.currentTime);
+                gn.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.2);
+                osc.connect(gn);
+                gn.connect(audioCtx.destination);
+                osc.start();
+                osc.stop(audioCtx.currentTime + 0.3);
+            }, 600);
+        }
+        function stopTensionSound() { if (this.tensionLoop) clearInterval(this.tensionLoop); }
+        function playSuccessSound() {
+            if (!audioCtx) initAudio();
+            const osc = audioCtx.createOscillator();
+            const gainNode = audioCtx.createGain();
+            osc.type = 'square';
+            osc.frequency.setValueAtTime(600, audioCtx.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(1200, audioCtx.currentTime + 0.1);
+            gainNode.gain.setValueAtTime(0.3, audioCtx.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
+            osc.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+            osc.start();
+            osc.stop(audioCtx.currentTime + 0.3);
+        }
+
+        function showScreen(name) { Object.values(screens).forEach(el => el.style.display = 'none'); screens[name].style.display = 'flex'; }
+        
+        // --- INPUT HANDLER MEJORADO CON PARTÍCULAS ---
+        function handleInput(e) {
+            // Ignorar input si estamos en login o resultado
+            if (gameState === 'login' || gameState === 'result') return;
+            
+            // Calcular posición del click/toque
+            let clientX, clientY;
+            if(e.type === 'touchstart') {
+                clientX = e.touches[0].clientX;
+                clientY = e.touches[0].clientY;
+            } else {
+                clientX = e.clientX;
+                clientY = e.clientY;
+            }
+
+            // Lógica de Juego + Partículas
+            if (gameState === 'waiting') {
+                // Click en Rojo (Fallo) -> Partículas Rojas
+                spawnParticles(clientX, clientY, '#d90429');
+                tooSoon();
+            } else if (gameState === 'clickable') {
+                // Click en Verde (Éxito) -> Partículas Blancas/Verdes
+                spawnParticles(clientX, clientY, '#ffffff'); // O usar #000 si se prefiere contraste
+                endGame();
+            } else if (gameState === 'idle') {
+                // Click en menú -> Partículas Azules
+                spawnParticles(clientX, clientY, '#00f3ff');
+            }
+        }
+        // --------------------------------------------
+
+        function startGame() {
+            initAudio();
+            if(audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+            gameState = 'waiting';
+            gameArea.className = 'state-wait';
+            showScreen('wait');
+            playTensionSound();
+            const randomTime = Math.floor(Math.random() * 3500) + 1500;
+            timeoutId = setTimeout(() => {
+                stopTensionSound();
+                playSuccessSound();
+                gameState = 'clickable';
+                gameArea.className = 'state-click';
+                showScreen('click');
+                startTime = Date.now();
+            }, randomTime);
+        }
+        function tooSoon() {
+            clearTimeout(timeoutId);
+            stopTensionSound();
+            gameArea.classList.add('shake');
+            document.querySelector('#wait-screen h1').innerText = "¡MUY PRONTO!";
+            setTimeout(() => {
+                gameArea.classList.remove('shake');
+                document.querySelector('#wait-screen h1').innerText = "ESPERA...";
+                resetGame();
+            }, 1000);
+        }
+
+        function endGame() {
+            finalScore = Date.now() - startTime;
+            gameState = 'result';
+            gameArea.className = 'state-idle';
+            showScreen('result');
+            document.getElementById('time-display').innerText = finalScore + "ms";
+
+            const feedback = document.getElementById('challenge-feedback');
+            if (challengerScore) {
+                feedback.style.display = 'block';
+                if (finalScore < challengerScore) {
+                    feedback.innerText = `🏆 ¡HAS GANADO! (Venciste a ${challengerName})`;
+                    feedback.style.color = "#00ff41";
+                } else if (finalScore === challengerScore) {
+                    feedback.innerText = `😐 EMPATE EXACTO`;
+                    feedback.style.color = "white";
+                } else {
+                    feedback.innerText = `☠️ HAS PERDIDO (${challengerName} hizo ${challengerScore}ms)`;
+                    feedback.style.color = "#d90429";
+                }
+            } else {
+                feedback.style.display = 'none';
+            }
+
+            let rank = "", color = "white";
+            if (finalScore < 150) { rank = "🧠 MATRIX"; color = "#9d4edd"; }
+            else if (finalScore < 200) { rank = "👑 DIOS"; color = "#ffd700"; }
+            else if (finalScore < 250) { rank = "⚡ PRO"; color = "#00ff41"; }
+            else if (finalScore < 300) { rank = "😐 NORMAL"; color = "white"; }
+            else { rank = "🐌 NPC"; color = "#d90429"; }
+            const badge = document.getElementById('rank-display');
+            badge.innerText = rank;
+            badge.style.color = color;
+        }
+
+        function resetGame() {
+            gameState = 'idle';
+            gameArea.className = 'state-idle';
+            prepareStartScreen();
+            showScreen('start');
+        }
+
+        async function compartirReto() {
+            const baseUrl = window.location.href.split('?')[0];
+            const challengeUrl = `${baseUrl}?score=${finalScore}&user=${encodeURIComponent(username)}`;
+            const shareData = {
+                title: 'Desafío de Reflejos',
+                text: `🔥 ${username} te ha desafiado.\nHizo ${finalScore}ms en el test de reflejos.\n¿Puedes ganarle? Entra aquí 👇`,
+                url: challengeUrl
+            };
+            if (navigator.share) {
+                try { await navigator.share(shareData); } catch (err) { console.log('Error', err); }
+            } else {
+                const copyText = `🔥 ${username} te ha desafiado: ${finalScore}ms.\n¿Puedes ganarle? 👇\n${challengeUrl}`;
+                navigator.clipboard.writeText(copyText).then(() => {
+                    const btn = document.querySelector('.btn-primary');
+                    let originalText = btn.innerText;
+                    btn.innerText = "✅ ENLACE COPIADO";
+                    setTimeout(() => btn.innerText = originalText, 2000);
+                });
+            }
+        }
+    </script>
+</body>
+</html>
